@@ -29,16 +29,16 @@ def receive_data(data_socket):
     return data
 
 
-def get_message_id(data):
-    return int.from_bytes(data[0:2], byteorder="little")
+def get_message_id(data, offset):
+    return 2, int.from_bytes(data[0:2], byteorder="little")
 
 
-def get_packet_size(data):
-    return int.from_bytes(data[2:4], byteorder="little")
+def get_packet_size(data, offset):
+    return offset + 2, int.from_bytes(data[offset : offset + 2], byteorder="little")
 
 
 def extract_frame_number(data, offset):
-    return offset + 4, int.from_bytes(memory[offset : offset + 4], byteorder="little")
+    return offset + 4, int.from_bytes(data[offset : offset + 4], byteorder="little")
 
 
 def extract_marker_data(data, offset):
@@ -94,9 +94,8 @@ def extract_rigid_body_data(data, offset):
     return offset, bodies
 
 
-def unpack_frame_data(data):
+def unpack_frame_data(data, offset):
     data = memoryview(data)
-    offset = 4
     result = {}
 
     offset, result["frame number"] = extract_frame_number(data, offset)
@@ -114,12 +113,14 @@ data = receive_data(data_socket)
 
 print(f"data length = {len(data)}")
 if len(data) > 0:
-    msg_id = get_message_id(data)
-    packet_size = get_packet_size(data)
+    offset = 0
+    offset, msg_id = get_message_id(data)
+    offset, packet_size = get_packet_size(data)
     print(msg_id)
     print(packet_size)
 
     if msg_id == NAT_FRAMEOFDATA:
         print("data frame received")
+        unpack_frame_data(data, offset)
     else:
         print("unhandled data type ignored")
