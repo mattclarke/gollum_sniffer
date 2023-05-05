@@ -38,7 +38,7 @@ def get_packet_size(data, offset):
 
 
 def extract_frame_number(data, offset):
-    return offset + 4, int.from_bytes(data[offset : offset + 4], byteorder="little")
+    return offset + 2, int.from_bytes(data[offset : offset + 2], byteorder="little")
 
 
 def extract_marker_data(data, offset):
@@ -114,8 +114,8 @@ data = receive_data(data_socket)
 print(f"data length = {len(data)}")
 if len(data) > 0:
     offset = 0
-    offset, msg_id = get_message_id(data)
-    offset, packet_size = get_packet_size(data)
+    offset, msg_id = get_message_id(data, offset)
+    offset, packet_size = get_packet_size(data, offset)
     print(msg_id)
     print(packet_size)
 
