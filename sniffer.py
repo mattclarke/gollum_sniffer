@@ -38,7 +38,7 @@ def get_packet_size(data, offset):
 
 
 def extract_frame_number(data, offset):
-    return offset + 2, int.from_bytes(data[offset : offset + 2], byteorder="little")
+    return offset + 4, int.from_bytes(data[offset : offset + 4], byteorder="little")
 
 
 def extract_marker_data(data, offset):
@@ -60,16 +60,16 @@ def extract_marker_data(data, offset):
             offset += 12
             model["markers"].append(pos)
 
-        num_unlabelled = int.from_bytes(data[offset : offset + 4], byteorder="little")
-        offset += 4
-        model["unlabelled_markers"] = []
+    num_models = int.from_bytes(data[offset : offset + 4], byteorder="little")
+    offset += 4
+    unlabelled_models = [{} for _ in range(num_models)]
 
-        for i in range(num_unlabelled):
-            pos = VECTOR3.unpack(data[offset : offset + 12])
-            offset += 12
-            model["unlabelled_markers"].append(pos)
+    for model in unlabelled_models:
+        pos = VECTOR3.unpack(data[offset : offset + 12])
+        offset += 12
+        model["markers"].append(pos)
 
-    return offset, models
+    return offset, {"labelled_models": models, "unlabelled_models": unlabelled_models}
 
 
 def extract_rigid_body_data(data, offset):
