@@ -74,7 +74,7 @@ def extract_marker_data(data, offset):
     for model in unlabelled_models:
         pos = VECTOR3.unpack(data[offset : offset + 12])
         offset += 12
-        model["markers"].append(pos)
+        model["markers"] = pos
 
     return offset, {"labelled_models": models, "unlabelled_models": unlabelled_models}
 
