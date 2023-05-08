@@ -3,7 +3,8 @@ import struct
 
 NAT_FRAMEOFDATA = 7
 
-
+FLOATVALUE = struct.Struct("<f")
+SHORT = struct.Struct("<h")
 VECTOR3 = struct.Struct("<fff")
 VECTOR4 = struct.Struct("<ffff")
 
@@ -90,11 +91,11 @@ def extract_rigid_body_data(data, offset):
         offset += 16
         body["rot"] = rot
 
-        marker_error = FloatValue.unpack(data[offset : offset + 4])[0]
+        marker_error = FLOATVALUE.unpack(data[offset : offset + 4])[0]
         offset += 4
         body["error"] = marker_error
 
-        raw_valid = struct.unpack("h", data[offset : offset + 2])[0]
+        raw_valid = SHORT.unpack(data[offset : offset + 2])[0]
         offset += 2
         body["valid"] = (raw_valid & 0x01) == 1
 
