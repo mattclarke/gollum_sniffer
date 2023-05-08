@@ -145,6 +145,16 @@ def request_model_definition(sock, address, port):
     send_command(sock, NAT_REQUEST_MODELDEF, "", (address, port))
 
 
+def extract_rigid_body_definition(data, offset):
+    name, _, _ = bytes(data[offset:]).partition(b"\0")
+    offset += len(name) + 1
+    print(name)
+
+    model_id = int.from_bytes(data[offset : offset + 4], byteorder="little")
+    offset += 4
+    print(model_id)
+
+
 def unpack_model_definition(data, offset):
     num_datasets = int.from_bytes(data[offset : offset + 4], byteorder="little")
     offset += 4
@@ -158,7 +168,7 @@ def unpack_model_definition(data, offset):
             pass
         elif data_type == 1:
             # Rigid body
-            pass
+            extract_rigid_body_definition(data, offset)
 
 
 command_socket = create_command_socket()
