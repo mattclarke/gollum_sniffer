@@ -1,5 +1,6 @@
 import socket
 import struct
+import time
 
 NAT_CONNECT = 0
 NAT_SERVERINFO = 1
@@ -206,7 +207,7 @@ def extract_skeleton_definition(data, offset):
 
     num_bodies = int.from_bytes(data[offset : offset + 4], byteorder="little")
     offset += 4
-    
+
     for _ in range(num_bodies):
         offset, rigid_body = extract_rigid_body_definition(offset, data)
 
@@ -249,7 +250,7 @@ def extract_force_plate_definition(data, offset):
     for _ in range(num_channels):
         channel_name, _, _ = bytes(data[offset:]).partition(b"\0")
         offset += len(channel_name) + 1
-    
+
     return offset, None
 
 
@@ -320,24 +321,33 @@ def unpack_model_definition(data, offset):
         elif data_type == 5:
             # Camera
             offset, _ = extract_camera_definition(data, offset)
+        else:
+            raise RuntimeError("unknown model data type")
 
     return rigid_bodies
 
 
-command_socket = create_command_socket()
-request_model_definition(command_socket, "127.0.0.1", 1510)
-response = receive_data(command_socket)
+def get_rigid_bodies(socket, address, port, timeout=5.0):
+    request_model_definition(command_socket, "127.0.0.1", 1510)
+    start_time = time.monotonic()
+    while time.monotonic() <= start_time + timeout:
+        response = receive_data(command_socket)
+        if len(response) == 0:
+            continue
+        offset = 0
+        offset, msg_id = get_message_id(response, offset)
+        offset, packet_size = get_packet_size(response, offset)
+        if msg_id != NAT_MODELDEF:
+            continue
+        return unpack_model_definition(response, offset)
 
-if len(response) > 0:
-    offset = 0
-    offset, msg_id = get_message_id(response, offset)
-    offset, packet_size = get_packet_size(response, offset)
-    if msg_id == NAT_SERVERINFO:
-        print("server info received")
-    elif msg_id == NAT_MODELDEF:
-        print("model definition received")
-        rigid_bodies = unpack_model_definition(response, offset)
-        print(rigid_bodies)
+    raise RuntimeError("rigid bodies request timed out")
+    
+
+
+command_socket = create_command_socket()
+rigid_bodies = get_rigid_bodies(command_socket, "127.0.0.1", 1510)
+print(rigid_bodies)
 
 data_socket = create_data_socket("239.255.42.99", "127.0.0.1", 1511)
 data = receive_data(data_socket)
