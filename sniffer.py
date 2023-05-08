@@ -342,24 +342,29 @@ def get_rigid_bodies(socket, address, port, timeout=5.0):
         return unpack_model_definition(response, offset)
 
     raise RuntimeError("rigid bodies request timed out")
-    
 
 
 command_socket = create_command_socket()
-rigid_bodies = get_rigid_bodies(command_socket, "127.0.0.1", 1510)
-print(rigid_bodies)
 
+rigid_bodies_map = {}
 data_socket = create_data_socket("239.255.42.99", "127.0.0.1", 1511)
-data = receive_data(data_socket)
 
-print(f"data length = {len(data)}")
-if len(data) > 0:
-    offset = 0
-    offset, msg_id = get_message_id(data, offset)
-    offset, packet_size = get_packet_size(data, offset)
+last_update = time.monotonic()
 
-    if msg_id == NAT_FRAMEOFDATA:
-        print("data frame received")
-        unpack_frame_data(data, offset)
-    else:
-        print("unhandled data type ignored")
+while True:
+    if not rigid_bodies_map or time.monotonic > last_update + 1.0:
+        rigid_bodies = get_rigid_bodies(command_socket, "127.0.0.1", 1510)
+        rigid_bodies_map = {body["id"]: str(body["name"]) for body in rigid_bodies}
+
+    data = receive_data(data_socket)
+    if len(data) > 0:
+        offset = 0
+        offset, msg_id = get_message_id(data, offset)
+        offset, packet_size = get_packet_size(data, offset)
+
+        if msg_id == NAT_FRAMEOFDATA:
+            print("data frame received")
+            unpack_frame_data(data, offset)
+        else:
+            print("unhandled data type ignored")
+    time.sleep(0.001)
