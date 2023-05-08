@@ -352,9 +352,10 @@ data_socket = create_data_socket("239.255.42.99", "127.0.0.1", 1511)
 last_update = time.monotonic()
 
 while True:
-    if not rigid_bodies_map or time.monotonic > last_update + 1.0:
+    if not rigid_bodies_map or time.monotonic() > last_update + 1.0:
         rigid_bodies = get_rigid_bodies(command_socket, "127.0.0.1", 1510)
-        rigid_bodies_map = {body["id"]: str(body["name"]) for body in rigid_bodies}
+        rigid_bodies_map = {body["id"]: body["name"].decode() for body in rigid_bodies}
+        last_update = time.monotonic()
 
     data = receive_data(data_socket)
     if len(data) > 0:
