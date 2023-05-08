@@ -149,6 +149,16 @@ def unpack_model_definition(data, offset):
     num_datasets = int.from_bytes(data[offset : offset + 4], byteorder="little")
     offset += 4
     print(num_datasets)
+    for _ in range(num_datasets):
+        data_type = int.from_bytes(data[offset : offset + 4], byteorder="little")
+        offset += 4
+
+        if data_type == 0:
+            # Marker set
+            pass
+        elif data_type == 1:
+            # Rigid body
+            pass
 
 
 command_socket = create_command_socket()
