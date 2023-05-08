@@ -118,6 +118,8 @@ def unpack_frame_data(data, offset):
 
     offset, result["rigid_bodies"] = extract_rigid_body_data(data, offset)
     print("rigid bodies:", result["rigid_bodies"])
+    
+    return offset, result
 
 
 def create_command_socket():
@@ -143,6 +145,12 @@ def request_model_definition(sock, address, port):
     send_command(sock, NAT_REQUEST_MODELDEF, "", (address, port))
 
 
+def unpack_model_definition(data, offset):
+    num_datasets = int.from_bytes(data[offset : offset + 4], byteorder="little")
+    offset += 4
+    print(num_datasets)
+
+
 command_socket = create_command_socket()
 request_model_definition(command_socket, "127.0.0.1", 1510)
 response = receive_data(command_socket)
@@ -155,6 +163,7 @@ if len(response) > 0:
         print("server info received")
     elif msg_id == NAT_MODELDEF:
         print("model definition received")
+        unpack_model_definition(response, offset)
 
 
 data_socket = create_data_socket("239.255.42.99", "127.0.0.1", 1511)
