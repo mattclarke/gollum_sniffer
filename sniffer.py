@@ -1,6 +1,7 @@
 import socket
 import struct
 
+NAT_CONNECT = 0
 NAT_FRAMEOFDATA = 7
 
 FLOATVALUE = struct.Struct("<f")
@@ -114,6 +115,26 @@ def unpack_frame_data(data, offset):
 
     offset, result["rigid_bodies"] = extract_rigid_body_data(data, offset)
     print("rigid bodies:", result["rigid_bodies"])
+
+
+def create_command_socket():
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    sock.bind(("", 0))
+    return sock
+
+
+def send_command(sock, command, command_str, address):
+    data = command.to_bytes(2, byteorder="little")
+    data += (len(command_str) + 1).to_bytes(2, byteorder="little")
+    data += command_str.encode("utf-8") + b"\0"
+
+    sock.sendto(data, address)
+
+
+command_socket = create_command_socket()
+send_command(command_socket, NAT_CONNECT, "Ping", ("127.0.0.1", 1510))
+response = receive_data(command_socket)
 
 
 data_socket = create_data_socket("239.255.42.99", "127.0.0.1", 1511)
