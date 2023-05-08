@@ -3,6 +3,8 @@ import struct
 
 NAT_CONNECT = 0
 NAT_SERVERINFO = 1
+NAT_REQUEST_MODELDEF = 4
+NAT_MODELDEF = 5
 NAT_FRAMEOFDATA = 7
 
 FLOATVALUE = struct.Struct("<f")
@@ -133,8 +135,16 @@ def send_command(sock, command, command_str, address):
     sock.sendto(data, address)
 
 
+def request_server_info(sock, address, port):
+    send_command(sock, NAT_CONNECT, "Ping", (address, port))
+
+
+def request_model_definition(sock, address, port):
+    send_command(sock, NAT_REQUEST_MODELDEF, "", (address, port))
+
+
 command_socket = create_command_socket()
-send_command(command_socket, NAT_CONNECT, "Ping", ("127.0.0.1", 1510))
+request_model_definition(command_socket, "127.0.0.1", 1510)
 response = receive_data(command_socket)
 
 if len(response) > 0:
@@ -142,8 +152,9 @@ if len(response) > 0:
     offset, msg_id = get_message_id(response, offset)
     offset, packet_size = get_packet_size(response, offset)
     if msg_id == NAT_SERVERINFO:
-        print("server info")
-
+        print("server info received")
+    elif msg_id == NAT_MODELDEF:
+        print("model definition received")
 
 
 data_socket = create_data_socket("239.255.42.99", "127.0.0.1", 1511)
