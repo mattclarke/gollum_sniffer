@@ -184,6 +184,20 @@ def extract_rigid_body_definition(data, offset):
     return offset, None
 
 
+def extract_marker_set_definition(data, offset):
+    name, _, _ = bytes(data[offset:]).partition(b"\0")
+    offset += len(name) + 1
+
+    num_markers = int.from_bytes(data[offset : offset + 4], byteorder="little")
+    offset += 4
+
+    for _ in range(num_markers):
+        marker_name, _, _ = bytes(data[offset:]).partition(b"\0")
+        offset += len(marker_name) + 1
+
+    return offset, None
+
+
 def unpack_model_definition(data, offset):
     num_datasets = int.from_bytes(data[offset : offset + 4], byteorder="little")
     offset += 4
@@ -194,10 +208,10 @@ def unpack_model_definition(data, offset):
 
         if data_type == 0:
             # Marker set
-            pass
+            offset, _ = extract_marker_set_definition(data, offset)
         elif data_type == 1:
             # Rigid body
-            extract_rigid_body_definition(data, offset)
+            offset, _ = extract_rigid_body_definition(data, offset)
 
 
 command_socket = create_command_socket()
