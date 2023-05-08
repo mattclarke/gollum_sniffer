@@ -113,13 +113,8 @@ def unpack_frame_data(data, offset):
     result = {}
 
     offset, result["frame number"] = extract_frame_number(data, offset)
-    print("frame number:", result["frame number"])
-
     offset, result["markers"] = extract_marker_data(data, offset)
-    print("markers:", result["markers"])
-
     offset, result["rigid_bodies"] = extract_rigid_body_data(data, offset)
-    print("rigid bodies:", result["rigid_bodies"])
 
     return offset, result
 
@@ -148,42 +143,44 @@ def request_model_definition(sock, address, port):
 
 
 def extract_rigid_body_definition(data, offset):
+    result = {}
     name, _, _ = bytes(data[offset:]).partition(b"\0")
     offset += len(name) + 1
-    print(name)
+    result["name"] = name
 
     model_id = int.from_bytes(data[offset : offset + 4], byteorder="little")
     offset += 4
-    print(model_id)
+    result["id"] = model_id
 
     parent_id = int.from_bytes(data[offset : offset + 4], byteorder="little")
     offset += 4
-    print(parent_id)
+    result["parent_id"] = parent_id
 
     pos_offsets = VECTOR3.unpack(data[offset : offset + 12])
     offset += 12
-    print(pos_offsets)
+    result["pos_offsets"] = pos_offsets
 
     num_markers = int.from_bytes(data[offset : offset + 4], byteorder="little")
     offset += 4
-    print(num_markers)
 
-    for _ in range(num_markers):
+    result["markers"] = [{} for _ in range(num_markers)]
+
+    for i in range(num_markers):
         marker_offset = VECTOR3.unpack(data[offset : offset + 12])
         offset += 12
-        print(marker_offset)
+        result["markers"][i]["offset"] = marker_offset
 
-    for _ in range(num_markers):
+    for i in range(num_markers):
         label = int.from_bytes(data[offset : offset + 4], byteorder="little")
         offset += 4
-        print(label)
+        result["markers"][i]["label"] = label
 
-    for _ in range(num_markers):
+    for i in range(num_markers):
         marker_name, _, _ = bytes(data[offset:]).partition(b"\0")
         offset += len(marker_name) + 1
-        print(marker_name)
+        result["markers"][i]["name"] = marker_name
 
-    return offset, None
+    return offset, result
 
 
 def extract_marker_set_definition(data, offset):
@@ -296,9 +293,10 @@ def extract_camera_definition(data, offset):
 
 
 def unpack_model_definition(data, offset):
+    rigid_bodies = []
     num_datasets = int.from_bytes(data[offset : offset + 4], byteorder="little")
     offset += 4
-    print(num_datasets)
+
     for _ in range(num_datasets):
         data_type = int.from_bytes(data[offset : offset + 4], byteorder="little")
         offset += 4
@@ -308,7 +306,8 @@ def unpack_model_definition(data, offset):
             offset, _ = extract_marker_set_definition(data, offset)
         elif data_type == 1:
             # Rigid body
-            offset, _ = extract_rigid_body_definition(data, offset)
+            offset, body = extract_rigid_body_definition(data, offset)
+            rigid_bodies.append(body)
         elif data_type == 2:
             # Skeleton
             offset, _ = extract_skeleton_definition(data, offset)
@@ -321,6 +320,8 @@ def unpack_model_definition(data, offset):
         elif data_type == 5:
             # Camera
             offset, _ = extract_camera_definition(data, offset)
+
+    return rigid_bodies
 
 
 command_socket = create_command_socket()
@@ -335,8 +336,8 @@ if len(response) > 0:
         print("server info received")
     elif msg_id == NAT_MODELDEF:
         print("model definition received")
-        unpack_model_definition(response, offset)
-
+        rigid_bodies = unpack_model_definition(response, offset)
+        print(rigid_bodies)
 
 data_socket = create_data_socket("239.255.42.99", "127.0.0.1", 1511)
 data = receive_data(data_socket)
