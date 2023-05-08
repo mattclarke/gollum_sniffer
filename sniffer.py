@@ -2,6 +2,7 @@ import socket
 import struct
 
 NAT_CONNECT = 0
+NAT_SERVERINFO = 1
 NAT_FRAMEOFDATA = 7
 
 FLOATVALUE = struct.Struct("<f")
@@ -136,6 +137,14 @@ command_socket = create_command_socket()
 send_command(command_socket, NAT_CONNECT, "Ping", ("127.0.0.1", 1510))
 response = receive_data(command_socket)
 
+if len(response) > 0:
+    offset = 0
+    offset, msg_id = get_message_id(response, offset)
+    offset, packet_size = get_packet_size(response, offset)
+    if msg_id == NAT_SERVERINFO:
+        print("server info")
+
+
 
 data_socket = create_data_socket("239.255.42.99", "127.0.0.1", 1511)
 data = receive_data(data_socket)
@@ -145,8 +154,6 @@ if len(data) > 0:
     offset = 0
     offset, msg_id = get_message_id(data, offset)
     offset, packet_size = get_packet_size(data, offset)
-    print(msg_id)
-    print(packet_size)
 
     if msg_id == NAT_FRAMEOFDATA:
         print("data frame received")
