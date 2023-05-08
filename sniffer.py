@@ -118,7 +118,7 @@ def unpack_frame_data(data, offset):
 
     offset, result["rigid_bodies"] = extract_rigid_body_data(data, offset)
     print("rigid bodies:", result["rigid_bodies"])
-    
+
     return offset, result
 
 
@@ -153,6 +153,35 @@ def extract_rigid_body_definition(data, offset):
     model_id = int.from_bytes(data[offset : offset + 4], byteorder="little")
     offset += 4
     print(model_id)
+
+    parent_id = int.from_bytes(data[offset : offset + 4], byteorder="little")
+    offset += 4
+    print(parent_id)
+
+    pos_offsets = VECTOR3.unpack(data[offset : offset + 12])
+    offset += 12
+    print(pos_offsets)
+
+    num_markers = int.from_bytes(data[offset : offset + 4], byteorder="little")
+    offset += 4
+    print(num_markers)
+
+    for _ in range(num_markers):
+        marker_offset = VECTOR3.unpack(data[offset : offset + 12])
+        offset += 12
+        print(marker_offset)
+
+    for _ in range(num_markers):
+        label = int.from_bytes(data[offset : offset + 4], byteorder="little")
+        offset += 4
+        print(label)
+
+    for _ in range(num_markers):
+        marker_name, _, _ = bytes(data[offset:]).partition(b"\0")
+        offset += len(marker_name) + 1
+        print(marker_name)
+
+    return offset, None
 
 
 def unpack_model_definition(data, offset):
