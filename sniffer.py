@@ -90,7 +90,14 @@ def extract_rigid_body_data(data, offset):
         offset += 16
         body["rot"] = rot
 
-        # TODO: depending on version we might need to unpack marker info here!
+        marker_error = FloatValue.unpack(data[offset : offset + 4])[0]
+        offset += 4
+        body["error"] = marker_error
+
+        raw_valid = struct.unpack("h", data[offset : offset + 2])[0]
+        offset += 2
+        body["valid"] = (raw_valid & 0x01) == 1
+
     return offset, bodies
 
 
