@@ -11,6 +11,8 @@ FLOATVALUE = struct.Struct("<f")
 SHORT = struct.Struct("<h")
 VECTOR3 = struct.Struct("<fff")
 VECTOR4 = struct.Struct("<ffff")
+FP_CAL_MATRIX_ROW = struct.Struct("<ffffffffffff")
+FP_CORNERS = struct.Struct("<ffffffffffff")
 
 
 def create_data_socket(multicast_address, local_address, port):
@@ -198,6 +200,101 @@ def extract_marker_set_definition(data, offset):
     return offset, None
 
 
+def extract_skeleton_definition(data, offset):
+    name, _, _ = bytes(data[offset:]).partition(b"\0")
+    offset += len(name) + 1
+
+    skeleton_id = int.from_bytes(data[offset : offset + 4], byteorder="little")
+    offset += 4
+
+    num_bodies = int.from_bytes(data[offset : offset + 4], byteorder="little")
+    offset += 4
+    
+    for _ in range(num_bodies):
+        offset, rigid_body = extract_rigid_body_definition(offset, data)
+
+    return offset, None
+
+
+def extract_force_plate_definition(data, offset):
+    plate_id = int.from_bytes(data[offset : offset + 4], byteorder="little")
+    offset += 4
+
+    serial, _, _ = bytes(data[offset:]).partition(b"\0")
+    offset += len(serial) + 1
+
+    width = FLOATVALUE.unpack(data[offset : offset + 4])
+    offset += 4
+    length = FLOATVALUE.unpack(data[offset : offset + 4])
+    offset += 4
+
+    origin = VECTOR3.unpack(data[offset : offset + 12])
+    offset += 12
+
+    matrix_size = 12
+
+    for _ in range(matrix_size):
+        row = FP_CAL_MATRIX_ROW.unpack(data[offset : offset + 48])
+        offset += 48
+
+    corners = FP_CORNERS.unpack(data[offset : offset + 48])
+    offset += 48
+
+    plate_type = int.from_bytes(data[offset : offset + 4], byteorder="little")
+    offset += 4
+
+    channel_type = int.from_bytes(data[offset : offset + 4], byteorder="little")
+    offset += 4
+
+    num_channels = int.from_bytes(data[offset : offset + 4], byteorder="little")
+    offset += 4
+
+    for _ in range(num_channels):
+        channel_name, _, _ = bytes(data[offset:]).partition(b"\0")
+        offset += len(channel_name) + 1
+    
+    return offset, None
+
+
+def extract_device_definition(data, offset):
+    device_id = int.from_bytes(data[offset : offset + 4], byteorder="little")
+    offset += 4
+
+    name, _, _ = bytes(data[offset:]).partition(b"\0")
+    offset += len(name) + 1
+
+    serial, _, _ = bytes(data[offset:]).partition(b"\0")
+    offset += len(serial) + 1
+
+    device_type = int.from_bytes(data[offset : offset + 4], byteorder="little")
+    offset += 4
+
+    data_type = int.from_bytes(data[offset : offset + 4], byteorder="little")
+    offset += 4
+
+    num_channels = int.from_bytes(data[offset : offset + 4], byteorder="little")
+    offset += 4
+
+    for _ in range(num_channels):
+        channel_name, _, _ = bytes(data[offset:]).partition(b"\0")
+        offset += len(channel_name) + 1
+
+    return offset, None
+
+
+def extract_camera_definition(data, offset):
+    name, _, _ = bytes(data[offset:]).partition(b"\0")
+    offset += len(name) + 1
+
+    position = VECTOR3.unpack(data[offset : offset + 12])
+    offset += 12
+
+    orientation = VECTOR4.unpack(data[offset : offset + 16])
+    offset += 16
+
+    return offset, None
+
+
 def unpack_model_definition(data, offset):
     num_datasets = int.from_bytes(data[offset : offset + 4], byteorder="little")
     offset += 4
@@ -212,6 +309,18 @@ def unpack_model_definition(data, offset):
         elif data_type == 1:
             # Rigid body
             offset, _ = extract_rigid_body_definition(data, offset)
+        elif data_type == 2:
+            # Skeleton
+            offset, _ = extract_skeleton_definition(data, offset)
+        elif data_type == 3:
+            # Force plate
+            offset, _ = extract_force_plate_definition(data, offset)
+        elif data_type == 4:
+            # Device
+            offset, _ = extract_device_definition(data, offset)
+        elif data_type == 5:
+            # Camera
+            offset, _ = extract_camera_definition(data, offset)
 
 
 command_socket = create_command_socket()
