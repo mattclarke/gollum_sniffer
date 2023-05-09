@@ -344,6 +344,10 @@ def get_rigid_bodies(socket, address, port, timeout=5.0):
     raise RuntimeError("rigid bodies request timed out")
 
 
+def generate_f144_messages(body):
+    pass
+
+
 command_socket = create_command_socket()
 
 rigid_bodies_map = {}
@@ -366,7 +370,8 @@ while True:
         offset, _ = get_packet_size(data, offset)
 
         if msg_id == NAT_FRAMEOFDATA:
-            frame_info = unpack_frame_data(data, offset)
-            # TODO: generate flatbuffers
+            offset, frame_info = unpack_frame_data(data, offset)
+            for body in frame_info["rigid_bodies"]:
+                messages = generate_f144_messages(body)
 
     time.sleep(0.001)
