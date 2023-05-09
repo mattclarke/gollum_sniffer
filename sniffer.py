@@ -358,14 +358,15 @@ while True:
         last_update = time.monotonic()
 
     data = receive_data(data_socket)
+    timestamp = time.time_ns()
+
     if len(data) > 0:
         offset = 0
         offset, msg_id = get_message_id(data, offset)
-        offset, packet_size = get_packet_size(data, offset)
+        offset, _ = get_packet_size(data, offset)
 
         if msg_id == NAT_FRAMEOFDATA:
-            print("data frame received")
-            unpack_frame_data(data, offset)
-        else:
-            print("unhandled data type ignored")
+            frame_info = unpack_frame_data(data, offset)
+            # TODO: generate flatbuffers
+
     time.sleep(0.001)
